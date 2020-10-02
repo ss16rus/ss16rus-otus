@@ -1,0 +1,78 @@
+<button onclick="doHomeWork()">Show result!</button>
+
+<script>
+    
+    function doHomeWork() {
+        console.log("Calculation begun");
+
+        let allPurchases = [];
+        let recommendations = new Map();
+        
+        allPurchases = preparePurchasesRandomly( 10 );
+        recommendations = prepareRecommendations( allPurchases );
+        let result = findLongestRecommendation( recommendations );
+        showResult ( allPurchases, result);
+    }
+    
+    
+    function preparePurchasesRandomly( buyersNumber ) {
+        let arrayToFillIn = [];
+    
+        for ( let i = 0; i < buyersNumber; ++i ) {
+            arrayToFillIn[ i ] = [];
+            for ( let y = 0; y < Math.ceil(Math.random() * 10); ++y ) {
+                let randomCharCode = Math.floor( Math.random() * 25) + 97;
+                arrayToFillIn[i].push( String.fromCharCode( randomCharCode ));
+            }
+        }
+    
+        return arrayToFillIn;
+    }
+    
+    
+    function prepareRecommendations ( allPurchases ) {
+            let purchasesList = new Map();
+    
+            for ( let userPurchases of allPurchases ) {
+                for ( let purchase of userPurchases) {
+    
+                    if ( purchasesList.has( purchase )) {
+                        let purchaseSet = purchasesList.get( purchase );
+                        for ( let purchase of userPurchases ) purchaseSet.add( purchase );
+                    } else {
+                        purchasesList.set( purchase, new Set( userPurchases ));
+                    }
+    
+                }
+            }
+    
+            return purchasesList;
+    } 
+    
+    
+    function findLongestRecommendation ( recommendations ) {
+        let longestRecommendation = new Set();
+        let longestRecommendationSize = 0;
+    
+        for ( let newRecommendationSet of recommendations.values()) {
+            if ( longestRecommendationSize < newRecommendationSet.size ) {
+                longestRecommendationSize = newRecommendationSet.size;
+                longestRecommendation = newRecommendationSet;
+            }
+        }
+    
+        return longestRecommendation.keys();
+    }
+    
+    
+    function showResult ( purchases, result ) {
+        let body = document.body;
+        body.insertAdjacentHTML('beforeend', "<p>Все покупки:</p>");
+        for ( let purchaseSet of purchases ) {
+            body.insertAdjacentHTML('beforeend', purchaseSet.join(", ") + '<br />');
+        }
+    
+        body.insertAdjacentHTML('beforeend', "Максимальная рекоммендация: " + [...result].join(', ') );
+    }
+
+</script>
