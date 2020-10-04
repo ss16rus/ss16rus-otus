@@ -17,18 +17,18 @@
     function preparePurchasesRandomly( purchasesNumber ) {
         let purchasesArray = [];
     
-        for ( let i = 0; i < purchasesNumber; ++i ) {
-            purchasesArray[ i ] = [];
+        for ( let purchase = 0; purchase < purchasesNumber; ++purchase ) {
+            purchasesArray[ purchase ] = [];
 			
-            for ( let y = 0; y < Math.ceil(Math.random() * 10); ++y ) {
+            for ( let itemNum = 0; itemNum < Math.ceil(Math.random() * 10); ++itemNum ) {
                 let randomCharCode = Math.floor( Math.random() * 25) + 97;
-				let purchaseItem = String.fromCharCode( randomCharCode );
+		let purchaseName = String.fromCharCode( randomCharCode );
 				
-				if ( !purchasesArray[i].includes( purchaseItem ))
-					purchasesArray[i].push( purchaseItem );
+		   if ( !purchasesArray[purchase].includes( purchaseName ))
+			purchasesArray[purchase].push( purchaseName );
             }
         }
-    
+
         return purchasesArray;
     }
     
@@ -40,7 +40,7 @@
                 for ( let purchaseItem of singlePurchase) {
     
                     if ( purchasesList.has( purchaseItem )) {
-						let purchaseSet = purchasesList.get( purchaseItem );
+			let purchaseSet = purchasesList.get( purchaseItem );
                         for ( let item of singlePurchase ) purchaseSet.add( item );
 											
                     } else {
@@ -48,7 +48,7 @@
                     }
                 }
             }
-			
+
             return purchasesList;
     } 
     
