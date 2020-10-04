@@ -3,7 +3,6 @@
 <script>
     
     function doHomeWork() {
-        console.log("Calculation begun");
 
         let allPurchases = [];
         let recommendations = new Map();
@@ -15,37 +14,41 @@
     }
     
     
-    function preparePurchasesRandomly( buyersNumber ) {
-        let arrayToFillIn = [];
+    function preparePurchasesRandomly( purchasesNumber ) {
+        let purchasesArray = [];
     
-        for ( let i = 0; i < buyersNumber; ++i ) {
-            arrayToFillIn[ i ] = [];
+        for ( let i = 0; i < purchasesNumber; ++i ) {
+            purchasesArray[ i ] = [];
+			
             for ( let y = 0; y < Math.ceil(Math.random() * 10); ++y ) {
                 let randomCharCode = Math.floor( Math.random() * 25) + 97;
-                arrayToFillIn[i].push( String.fromCharCode( randomCharCode ));
+				let purchaseItem = String.fromCharCode( randomCharCode );
+				
+				if ( !purchasesArray[i].includes( purchaseItem ))
+					purchasesArray[i].push( purchaseItem );
             }
         }
     
-        return arrayToFillIn;
+        return purchasesArray;
     }
     
     
     function prepareRecommendations ( allPurchases ) {
             let purchasesList = new Map();
     
-            for ( let userPurchases of allPurchases ) {
-                for ( let purchase of userPurchases) {
+            for ( let singlePurchase of allPurchases ) {
+                for ( let purchaseItem of singlePurchase) {
     
-                    if ( purchasesList.has( purchase )) {
-                        let purchaseSet = purchasesList.get( purchase );
-                        for ( let purchase of userPurchases ) purchaseSet.add( purchase );
+                    if ( purchasesList.has( purchaseItem )) {
+						let purchaseSet = purchasesList.get( purchaseItem );
+                        for ( let item of singlePurchase ) purchaseSet.add( item );
+											
                     } else {
-                        purchasesList.set( purchase, new Set( userPurchases ));
+                        purchasesList.set( purchaseItem, new Set( singlePurchase ));
                     }
-    
                 }
             }
-    
+			
             return purchasesList;
     } 
     
