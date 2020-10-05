@@ -23,11 +23,11 @@ Homework #1
 
 -->
 
-<button onclick="findAllRecommendations()">Show result!</button>
+<button onclick="maxItemAssociation()">Show result!</button>
 
 <script>
     
-    function findAllRecommendations() {
+    function maxItemAssociation() {
 
         let allPurchases = [];
         let recommendations = new Map();
@@ -82,7 +82,6 @@ Homework #1
     function findLongestRecommendation ( recommendations ) {
         let winnerRecommendations = [];
         let longestSize = 0;
-        console.log( recommendations );
     
         for ( let newRecommendationSet of recommendations.values()) {
             let newSize = newRecommendationSet.size;
