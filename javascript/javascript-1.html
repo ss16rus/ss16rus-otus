@@ -1,0 +1,138 @@
+<!--
+Homework #1
+
+Задача про список рекомендаций maxItemAssociation
+
+Цель: Написать алгоритм для нахождения максимального списка рекомендаций.
+
+Написать функцию maxItemAssociation(), получающую исторические данные о покупках пользователей. 
+Функция возвращает максимальный список рекомендаций. Если количество рекомендаций в группах одинаковое - то 
+возвращает первую группу, из отсортированных в лексикографическом порядке.
+
+Входные данные - массив исторических покупок пользователей [["a", "b"], ["a", "c"], ["d", "e"]].
+Пользователь 1 купил "a" и "b". Пользователь 2 купил продукты "a", "c". Пользователь 3 купил продукты "d", "e".
+
+Надо найти максимальную группу рекомендаций. 
+Группа рекомендаций - это список продуктов, который может быть получен с помощью рекомендаций к исходной покупке. 
+Рекомендация состоит из списка покупок другого пользователя, который пересекается с группой.
+Если пользователь купил продукты ["a", "b"], то в группу рекомендаций попадут ["a", "b"], а также все продукты других пользователей, 
+которые пересекаются с ней по какому-то продукту. В данном примере список продуктов пользователя 2 пересекается с группой рекомендаций 
+по продукту "a", поэтому весь список 2 может быть добавлен в рекомендации - ["a", "b", "c"]. Это конечная группа рекомендаций, 
+так как больше нет пересечений с другими списками продуктов. 
+Группа рекомендаций может быть составлена для каждого исходного списка продуктов.
+
+-->
+
+<button onclick="maxItemAssociation()">Show result!</button>
+
+<script>
+    
+    function maxItemAssociation() {
+
+        let allPurchases = [];
+        let recommendations = new Map();
+        
+        allPurchases = preparePurchasesRandomly( 10 );
+        recommendations = findAllRecommendations( allPurchases );
+        let result = findLongestRecommendations( recommendations );
+        sortRecomendationsLexicographically( result );
+        showResult ( allPurchases, result[0]);
+    }
+    
+    
+    function preparePurchasesRandomly( purchasesNumber ) {
+        let purchasesArray = [];
+    
+        for ( let purchase = 0; purchase < purchasesNumber; ++purchase ) {
+            purchasesArray[ purchase ] = [];
+			
+            for ( let itemNum = 0; itemNum < Math.ceil(Math.random() * 10); ++itemNum ) {
+                let randomCharCode = Math.floor( Math.random() * 25) + 97;
+		let purchaseName = String.fromCharCode( randomCharCode );
+				
+		   if ( !purchasesArray[purchase].includes( purchaseName ))
+			purchasesArray[purchase].push( purchaseName );
+            }
+        }
+
+        return purchasesArray;
+    }
+    
+    
+    function findAllRecommendations ( allPurchases ) {
+            let purchasesList = new Map();
+    
+            for ( let singlePurchase of allPurchases ) {
+                for ( let purchaseItem of singlePurchase) {
+    
+                    if ( purchasesList.has( purchaseItem )) {
+			            let purchaseSet = purchasesList.get( purchaseItem );
+                        for ( let item of singlePurchase ) purchaseSet.add( item );
+											
+                    } else {
+                        purchasesList.set( purchaseItem, new Set( singlePurchase ));
+                    }
+                }
+            }
+
+            return purchasesList;
+    } 
+    
+    
+    function findLongestRecommendations ( recommendations ) {
+        let winnerRecommendations = [];
+        let longestSize = 0;
+    
+        for ( let newRecommendationSet of recommendations.values()) {
+            let newSize = newRecommendationSet.size;
+
+            if ( longestSize < newSize ) {
+                longestSize = newSize;
+                winnerRecommendations.length = 0;
+                winnerRecommendations[0] = newRecommendationSet;
+
+            } else if ( longestSize == newSize ) {
+                winnerRecommendations.push( newRecommendationSet );
+            }
+        }
+    
+        return winnerRecommendations;
+    }
+    
+
+    function sortRecomendationsLexicographically( recommendationsArr ) {    // recommendationsArr is array of Sets
+        if ( recommendationsArr.length == 1 ) return;
+        // console.log( recommendationsArr );
+
+        recommendationsArr.sort((recommend_1, recommend_2) => {
+            let item_1 = getSortedStringFromSet(recommend_1);
+            let item_2 = getSortedStringFromSet(recommend_2);
+            // console.log( item_1, item_2 );
+
+            if ( item_1 > item_2 ) return 1;
+            if ( item_1 < item_2 ) return -1;
+            return 0;
+            }
+        );
+    }
+
+
+    function getSortedStringFromSet( setToSort ) {
+        let arrToSort = [...setToSort];
+        return arrToSort
+        .sort(( item_1, item_2) => item_1.charCodeAt(0) - item_2.charCodeAt(0))
+        .join('');
+    }
+    
+
+    function showResult ( purchases, result ) {
+        let body = document.body;
+        body.insertAdjacentHTML('beforeend', "<p>Все покупки:</p>");
+        for ( let purchaseSet of purchases ) {
+            body.insertAdjacentHTML('beforeend', purchaseSet.join(", ") + '<br />');
+        }
+    
+        body.insertAdjacentHTML('beforeend', "Максимальная рекоммендация: " + [...result].join(', ') );
+    }
+
+</script>
