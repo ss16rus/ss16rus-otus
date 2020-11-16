@@ -4,7 +4,7 @@ const http = require('http');
 const url = require('url');
 
 let myFiles = [];
-let folders = [];
+let myFolders = [];
 
 const startPoint = process.argv[2];
 
@@ -12,79 +12,84 @@ if ( startPoint == undefined) {
 
     http.createServer((req, res) => {
         const  q = url.parse(req.url, true);
-        const filename = "." + q.pathname;
+        const filename = q.pathname;
+        res.write("Trying to access " + filename);
         
-        if ( checkFolder( filename)) {
+        checkDestination( filename, result => {
+            if ( result ) {
 
-            createFilesTree(startPoint)
-            .then( () => {
-                console.log( JSON.stringify(myFiles, folders));
-            })
-        } else {
+                res.write("\nAccess allowed\n");
+                createFilesTree( filename )
+                .then(() => {
+                    res.end( JSON.stringify({files: myFiles, dirs: myFolders}));
+                    myFiles.length = 0;
+                    myFolders.length = 0;
+                });
+            } else {
 
-            res.writeHead(404, {'Content-Type': 'text/html'});
-            return res.end("404 Not Found");
-        }
-    }).listen(8080);
+                res.writeHead(404, {'Content-Type': 'text/html'});
+                return res.end( filename + " not accessible");
+            }
+        })
+    }).listen(8888);
 
+    console.log('Server listening on 8888');
 } else {
 
-    if ( checkFolder( filename)) {
-        createFilesTree(startPoint)
-        .then( () => {
-            console.log( JSON.stringify(myFiles, folders));
-        })
-    } else {
-
-        console.log("Destination is unaccessible.")
-    }
-
+    checkDestination( startPoint, result => {
+        if ( result ) {
+            createFilesTree( startPoint )
+            .then( () => {
+                console.log( myFiles, myFolders );
+            })
+        } else {
+            console.log("Destination is unaccessible.")
+        }
+    });
 }
 
 
-function checkFolder(startPoint) {
-    return fs.access(startPoint, err => {
+function checkDestination( target, callback ) {
+    return fs.access(target, err => {
         if (err) {
-            return false;
+            callback( false );
         } else {
-            return true;
+            callback( true );
         }
     })
 }
 
 
-async function createFilesTree( folder ) {
+async function createFilesTree( target ) {
     return new Promise( (resolve, reject) => {
-        fs.readdir( folder, (err, files) => {
+        fs.readdir( target, (err, files) => {
             if (err) {
                 reject(err);
                 return;
             }
 
+            myFolders.push( target );
             let filesCount = files.length;
-            
+
             for (let file of files) {
-                const fullName = path.join( folder, file);
-    
-                fs.stat(fullName, async (err, stats) => {
+                const fullName = path.join( target, file);
+                
+                fs.stat( fullName, async (err, stats) => {
                     if (err) {
                         reject( err );
                         return;
                     }
                     
-                    if (stats.isFile()) {
+                    if ( stats.isFile()) {
                         myFiles.push( fullName );
-                        if ( --filesCount == 0) resolve("ok");
-                    }
-                    
-                    if (stats.isDirectory()) {
-                        folders.push( fullName );
+                        if ( --filesCount ) resolve("ok");
+                    } else {
+                        myFolders.push( fullName );
                         await createFilesTree( fullName );
-                        if ( --filesCount == 0) resolve("ok");
+                        if ( --filesCount ) resolve("ok");
                     }
-                });
+                })
             }
-
-        });
+        })
     })
 }
