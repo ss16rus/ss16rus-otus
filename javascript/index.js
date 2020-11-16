@@ -24,11 +24,12 @@ if ( startPoint == undefined) {
                     res.end( JSON.stringify({files: myFiles, dirs: myFolders}));
                     myFiles.length = 0;
                     myFolders.length = 0;
-                });
+                })
+                .catch( console.error );
             } else {
 
                 res.writeHead(404, {'Content-Type': 'text/html'});
-                return res.end( filename + " not accessible");
+                return res.end( filename + " is unreachable");
             }
         })
     }).listen(8888);
@@ -36,39 +37,33 @@ if ( startPoint == undefined) {
     console.log('Server listening on 8888');
 } else {
 
+    console.log("Trying to access ",  startPoint);
     checkDestination( startPoint, result => {
         if ( result ) {
             createFilesTree( startPoint )
             .then( () => {
                 console.log( myFiles, myFolders );
             })
+            .catch( console.error );
         } else {
-            console.log("Destination is unaccessible.")
+            console.log("Destination is unreachable.")
         }
     });
 }
 
 
 function checkDestination( target, callback ) {
-    return fs.access(target, err => {
-        if (err) {
-            callback( false );
-        } else {
-            callback( true );
-        }
-    })
+    return fs.access( target, err => { callback( !err ); })
 }
 
 
 async function createFilesTree( target ) {
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         fs.readdir( target, (err, files) => {
             if (err) {
-                reject(err);
+                reject( err );
                 return;
             }
-
-            myFolders.push( target );
             let filesCount = files.length;
 
             for (let file of files) {
@@ -82,14 +77,14 @@ async function createFilesTree( target ) {
                     
                     if ( stats.isFile()) {
                         myFiles.push( fullName );
-                        if ( --filesCount ) resolve("ok");
+                        if ( --filesCount == 0 ) resolve("ok");
                     } else {
                         myFolders.push( fullName );
                         await createFilesTree( fullName );
-                        if ( --filesCount ) resolve("ok");
+                        if ( --filesCount == 0 ) resolve("ok");
                     }
                 })
             }
         })
-    })
+    });
 }
