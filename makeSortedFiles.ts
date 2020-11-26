@@ -1,9 +1,11 @@
+import { strict } from 'assert';
 import fs from 'fs';
 
 export default async function writeSortedChunk( 
-                       bigFile: string, maxBytes: number ) : Promise<void> {
+                       bigFile: string, maxBytes: number ) : Promise<string[]> {
 
     const rs = fs.createReadStream( bigFile,  { highWaterMark: 1, flags: 'r', encoding: "utf8" });
+    const chuncksNames: string[] = [];
 
     const accumulator: number[] = [];
     let nextNum: string = '';
@@ -34,13 +36,15 @@ export default async function writeSortedChunk(
 
     rs.on('pause', () => {
         const ext: string = part < 10 ? '0' + part : '' + part;
-        const ws = fs.createWriteStream(`./${bigFile}.${ext}`, {encoding:'utf-8'});
+        const chunkName: string =  `${bigFile}.${ext}`;
+        const ws = fs.createWriteStream( chunkName, {encoding:'utf-8'});
         accumulator.sort((a, b) => a - b);
         ws.write( accumulator.join(' '));
         
         ws.on('drain', () => {
             console.log(accumulator.length + " bytes processed");
             ++part;
+            chuncksNames.push( chunkName );
             rs.resume();
         });
     })
@@ -53,7 +57,7 @@ export default async function writeSortedChunk(
     return new Promise ( res => {
         rs.on('close', () => {
             console.log(`File stream is closed`);
-            res();
+            res( chuncksNames );
         });
     })
 }
