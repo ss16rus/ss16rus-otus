@@ -1,23 +1,19 @@
-import fs, { ReadStream } from 'fs';
+import fs, { ReadStream, WriteStream } from 'fs';
 
 class Chunk {
-    value: number | null = 0;
+    value: number | null = null;
+    rs: ReadStream;
     myGenerator;
 
-    constructor ( rs: ReadStream ) {
-        this.myGenerator = this.takeGenerator( rs );
+    constructor ( chunkName: string ) {
+        this.rs = fs.createReadStream( chunkName, {highWaterMark: 1, encoding: 'utf8'});
+        this.rs.on('ready', () => { console.log( chunkName, 'is ready')});
+        this.myGenerator = this.takeGenerator( this.rs );
     }
 
     async getNextValue() {
-        this.value = await this.myGenerator
-        .next().then( res => {
-            if ( res ) {
-                return +res.value!;
-            } else {
-                return null
-            }
-        });
-
+        const res = await this.myGenerator.next();
+        this.value = res.done ? null : +res.value;
         return this.value;
     }
 
@@ -33,45 +29,66 @@ class Chunk {
                 accumulator += chunk;
             }
         }
-        yield null;
+
+        if ( accumulator != '') yield accumulator;
     }
 
 }
  
-export default async function createFinalFile( chuncksNames: string[] ) {
-    const readStreams: ReadStream[] = takeReadStreams( chuncksNames );
-
-    const chuncks: Chunk[] = [];
+export default async function createFinalFile( file1: string, file2: string) : Promise<string> {
+    const chunkOne: Chunk = new Chunk( file1 );
+    const chunkTwo: Chunk = new Chunk( file2 );
     
-    for ( let stream of readStreams ) {
-        chuncks.push( new Chunk( stream ));
-    }
+    // считать символы из потоков
+    // если null тогда дописать оставшийся поток в конец и закончить
+    // выбрать меньшее из чисел, записать в результат
+    // получить следующее число из потока, в котором было меньшее число
+    // перейти к п. 2 
 
-    for ( let i = 0; i < chuncks.length; ++i) {
-        await chuncks[i].getNextValue();
-    }
+    const outputFile = fs.createWriteStream( file1 + file2 );
+    await chunkOne.getNextValue();
+    await chunkTwo.getNextValue();
+    
+    do {
+        if ( chunkOne.value == null ) {
+            // записать поток два 
+            console.log('Chunk One ended');
+            await saveTheRest( chunkTwo, outputFile );
+            console.log('Saved the rest of chunkTwo');
+            break;
+        }
+        if ( chunkTwo.value == null ) {
+            // записать поток один 
+            console.log('Chunk Two ended');
+            await saveTheRest( chunkOne, outputFile );
+            console.log('Saved the rest of chunkOne');
+            break;
+        }
+        if ( chunkOne.value < chunkTwo.value ) {
+            // записать value и получить данные из потока 1
+            outputFile.write( chunkOne.value + ' ');
+            await chunkOne.getNextValue();
+        } else {
+            // записать value и получить данные из потока 2
+            outputFile.write( chunkTwo.value + ' ');
+            await chunkTwo.getNextValue();
+        }
+    } while(true);
 
-    chuncks.sort((a, b) => {
-        if ( a.value && b.value ) return a.value - b.value;
-        if ( a.value == null ) return -1;
-        if ( b.value == null ) return 1;
-        if ( a.value == null && b.value == null) return 0;
-    });
-
-    for ( let chunk of chuncks ) {
-
-        console.log(chunk.value);
-    }
-
+    outputFile.end();
+    fs.unlink( file1, err =>{});
+    fs.unlink( file2, err =>{});
+    return file1 + file2;  
 }
 
 
-function takeReadStreams( filesNames: string[] ) : ReadStream[] {
-    const streams: ReadStream[] = [];
-
-    for ( const chunkName of filesNames) {
-        const rs = fs.createReadStream( chunkName, {highWaterMark: 1, encoding: 'utf8'});
-        streams.push( rs );
-    }
-    return streams;
+async function saveTheRest ( chunk: Chunk, ws: WriteStream ) : Promise<void>{
+    return new Promise( async res => {
+        while ( chunk.value ) {
+            ws.write( chunk.value + ' ');
+            await chunk.getNextValue();
+        }
+        res();
+    });
+    
 }

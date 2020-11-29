@@ -1,53 +1,45 @@
-import { strict } from 'assert';
 import fs from 'fs';
 
-export default async function writeSortedChunk( 
-                       bigFile: string, maxBytes: number ) : Promise<string[]> {
+const CHUNK_NUMBERS = 8;
 
-    const rs = fs.createReadStream( bigFile,  { highWaterMark: 1, flags: 'r', encoding: "utf8" });
-    const chuncksNames: string[] = [];
+export default async function writeSortedChunk( 
+                       bigFile: string, fileSizeMB: number ) : Promise<string[]> {
+
+    const CHUNK_SIZE = Math.round( fileSizeMB *1024 *1024 / CHUNK_NUMBERS );
+
+    const rs = fs.createReadStream( bigFile, { highWaterMark: 1, flags: 'r', encoding: "utf8" });
+    const chunksNames: string[] = [];
 
     const accumulator: number[] = [];
     let nextNum: string = '';
     let counter: number = 0;
-    let part: number = 1;
-
+    let globalCounter = 0;
+    
     rs.on('data', chunk => {
         if ( chunk == null ) {
+            if ( nextNum != '' ) accumulator.push( +nextNum );
             rs.close();
             return;
         }
 
-        if ( chunk == ' ') {
+        if ( chunk == ' ' || chunk == null ) {
             accumulator.push( +nextNum );
             nextNum = '';
         } else {
             nextNum += chunk;
         }
-
         ++counter; 
-        // avail - 3938/3777 MB free - 1376/1201
-        // avail - 3938/3780 MB free - 1376/1209
 
-        if ( counter >= maxBytes && chunk == ' ' ) {
+        if ( chunk == null || 
+             counter >= CHUNK_SIZE && chunk == ' ' ) {
             rs.pause();
         } 
     });
 
-    rs.on('pause', () => {
-        const ext: string = part < 10 ? '0' + part : '' + part;
-        const chunkName: string =  `${bigFile}.${ext}`;
-        const ws = fs.createWriteStream( chunkName, {encoding:'utf-8'});
-        accumulator.sort((a, b) => a - b);
-        ws.write( accumulator.join(' '));
-        
-        ws.on('drain', () => {
-            console.log(accumulator.length + " bytes processed");
-            ++part;
-            chuncksNames.push( chunkName );
-            rs.resume();
-        });
-    })
+    let part: number = 1;
+    rs.on('pause', async () => {
+        await saveChunkToFile();
+    });
     
     rs.on('resume', () => {
         counter = 0;
@@ -55,9 +47,32 @@ export default async function writeSortedChunk(
     });
 
     return new Promise ( res => {
-        rs.on('close', () => {
-            console.log(`File stream is closed`);
-            res( chuncksNames );
+        rs.on('close', async () => {
+            if ( accumulator.length > 0) {
+                await saveChunkToFile();
+            }
+            console.log(`Sorted chunks created`);
+            res( chunksNames );
         });
-    })
+    });
+
+    async function saveChunkToFile() : Promise<void> {
+        const ext: string = part < 10 ? '0' + part : '' + part;
+        const chunkName: string =  `part${ext}`;
+        const ws = fs.createWriteStream( chunkName, {encoding:'utf-8'});
+        accumulator.sort((a, b) => a - b);
+        ws.on('drain', () => {
+            globalCounter += counter;
+            const size = Math.round( 1000 * globalCounter / (1024*1024))/1000;
+            console.log (`${size} of ${fileSizeMB} MB processed`);
+            ++part;
+            chunksNames.push( chunkName );
+            rs.resume();
+        });
+        return new Promise( res => {
+            ws.write( accumulator.join(' '), () => {
+                res();
+            });
+        });
+    }
 }
