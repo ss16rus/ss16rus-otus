@@ -1,0 +1,74 @@
+<head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      width: 800px;
+      height: 100%;
+      margin: auto;
+      display: flex;
+    }
+    #admin_panel {
+      padding-left: 10px;
+      flex: none;
+    }
+    #controls {
+      padding-left: 10px;
+    }
+    #groups {
+      height: calc(100% - 45px);
+      overflow: auto;
+    }
+    #shop_panel {
+      height: 100%;
+      overflow: hidden;
+      flex: auto;
+      padding: 5px;
+    }
+    [id^=group-] {
+      cursor: pointer;
+      padding: 3px;
+    }
+    [id^=item-] {
+      cursor: default;
+      padding: 3px 0 3px 15px;
+    }
+    [class^=manufacturer] {
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body >
+  <fieldset id='shop_panel'>
+    <legend>Магазин</legend>
+    <div id='basket'>
+      <button id='show_basket' onclick="showBasket()">Показать корзину</button>
+      <button id='send_order' onclick="makeOrder()">Оформить заказ</button>
+      <br>
+      <div id='basket_items'></div>
+    </div><br>
+
+    <div id='groups'></div><br>
+  </fieldset><br>
+
+  <div id='admin_panel'> Админка
+    <fieldset><legend>Добавление товара</legend>
+      <form id= "addItemToDB">
+        <input id='item_name' placeholder="Имя товара*" /><br>
+        <input id='item_manuf' placeholder="Фирма производитель*"  /><br>
+        <input id='item_group' placeholder="Категория товара*"  /><br>
+        <input id='item_price' placeholder="Цена" /><br><br>
+        <button id='item_append' type="submit">Добавить товар</button>
+      </form>
+    </fieldset>
+    <fieldset><legend>Удаление товара</legend>
+    <input id='item_id' placeholder="Номер товара" />
+    <button id='item_delete' onclick="deleteItemFromDB()">Удалить товар</button>
+    </fieldset>
+  </div>
+
+  <script src='./index.js'></script>
+</body>
