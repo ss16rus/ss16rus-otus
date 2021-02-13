@@ -12,6 +12,8 @@ function Home () {
 
   const [city, setCity] = useState( null );
   const [geo, setGeo] = useState( null );
+  const [upd, forceUpdate] = useState( 1 );
+  const [favorites, setFavorites] = useState( new Map());
   
   
   function setLocation({ newCity, lat, long }) {
@@ -20,24 +22,26 @@ function Home () {
     setGeo({ lat: lat, long: long });
   }
   
-  const myFavorites = new Map();
-  myFavorites.set("city 1",  {lat: 1, long: 1}).set("city 2", {lat: 1, long: 1});
-  const [favorites, setFavorites] = useState( myFavorites );
 
   function modifyFavoritesCallback( city: string ) {
-    if ( myFavorites.has( city )) {
-      myFavorites.delete( city );
+    if ( favorites.has( city )) {
+      favorites.delete( city );
     } else {
-      myFavorites.set( city, geo);
+      favorites.set( city, geo);
     }
-    setFavorites(myFavorites);
+    forceUpdate(upd + 1);
+    setFavorites(favorites);
   }
 
 
   return (
     <div className={"container"}>
       <CitySelector setLocationCallBack={setLocation} />
-      <Forecast city={city} coordinates={geo} modifyFavoritesCallback={modifyFavoritesCallback} />
+      <Forecast 
+          city={city} 
+          coordinates={geo} 
+          inFavorites={favorites.has(city)}
+          modifyFavoritesCallback={modifyFavoritesCallback} />
       <Favorites favorites={favorites} setFavoriteCallback={setLocation} />
 
       <style> {`

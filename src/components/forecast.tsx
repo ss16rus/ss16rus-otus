@@ -33,6 +33,7 @@ interface IProps {
     lat: number,
     long: number
   },
+  inFavorites: boolean,
   modifyFavoritesCallback: Function
 }
 
@@ -88,33 +89,27 @@ export default class Forecast extends Component {
 
 
   shouldComponentUpdate( newProps: IProps, newState: IState ) {
-    console.log('shouldComponentUpdate, newProps', newProps );
-    console.log('shouldComponentUpdate, this.props', this.props );
-    console.log('shouldComponentUpdate, newState', newState );
-    console.log('shouldComponentUpdate, this.state', this.state );
+    // console.log('shouldComponentUpdate, newProps', newProps );
+    // console.log('shouldComponentUpdate, this.props', this.props );
+    // console.log('shouldComponentUpdate, newState', newState );
+    // console.log('shouldComponentUpdate, this.state', this.state );
 
     if ( this.props.city != newProps.city ) { // обновился город
       this.updateForecast( newProps.coordinates );
-      return true;
-    }
-
-    if ( !this.state.forecast && newState.forecast ) { // ничего не было 
-      return true;
     }
 
     if ( this.state.forecast && !newState.forecast ) { // нажата кнопка reload
       this.updateForecast( newProps.coordinates );
-      return true;
     }
 
-    return false;
+    return true;
   }
 
 
   componentDidUpdate( prevProps ) {
-    console.log('componentDidUpdate prevProps', prevProps );
-    console.log('componentDidUpdate this.props', this.props );
-    console.log('componentDidUpdate this.state', this.state );
+    // console.log('componentDidUpdate prevProps', prevProps );
+    // console.log('componentDidUpdate this.props', this.props );
+    // console.log('componentDidUpdate this.state', this.state );
   }
 
 
@@ -129,15 +124,17 @@ export default class Forecast extends Component {
 
 
   render () {
-    console.log('Forecast render this.props', this.props );
-    console.log('Forecast render this.state', this.state );
+    console.log('Forecast render');
+    // console.log('Forecast render this.state', this.state );
     return (
       <>
         { this.props.city ? 
         <>
           <div style={{padding: '5px 0', fontWeight: 'bold'}}>
             Погода в {this.props.city + " "}
-            <button onClick={this.changeFavorites}>*</button>
+            <button onClick={this.changeFavorites}>
+              {this.props.inFavorites ? '-' : '+'}
+            </button>
           </div>
         </>
         :
